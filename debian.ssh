@@ -1,0 +1,144 @@
+#!/bin/bash
+#created : 
+
+# initialisasi var
+export DEBIAN_FRONTEND=noninteractive
+OS=`uname -m`;
+MYIP=$(ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
+MYIP2="s/xxxxxxxxx/$MYIP/g";
+
+country=ID
+state=Semarang
+locality=JawaTengah
+organization=hidessh
+organizationalunit=ZeSSH
+commonname=zessh.com
+email=admin@zessh.com
+
+# go to root
+cd
+
+# disable ipv6
+echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6
+sed -i '$ i\echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6' /etc/rc.local
+
+# set time GMT +7 jakarta
+ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
+
+# set locale
+sed -i 's/AcceptEnv/#AcceptEnv/g' /etc/ssh/sshd_config
+/etc/init.d/ssh restart
+
+# Edit file /etc/systemd/system/rc-local.service
+cat > /etc/systemd/system/rc-local.service <<-END
+[Unit]
+Description=/etc/rc.local
+ConditionPathExists=/etc/rc.local
+[Service]
+Type=forking
+ExecStart=/etc/rc.local start
+TimeoutSec=0
+StandardOutput=tty
+RemainAfterExit=yes
+SysVStartPriority=99
+[Install]
+WantedBy=multi-user.target
+END
+
+# nano /etc/rc.local
+cat > /etc/rc.local <<-END
+#!/bin/sh -e
+# rc.local
+# By default this script does nothing.
+exit 0
+END
+
+# Ubah izin akses
+chmod +x /etc/rc.local
+
+# enable rc local
+systemctl enable rc-local
+systemctl start rc-local.service
+
+apt-get -y update
+
+
+
+echo "================  install Dropbear ======================"
+echo "========================================================="
+
+# install dropbear
+apt-get -y install dropbear
+sed -i 's/NO_START=1/NO_START=0/g' /etc/default/dropbear
+sed -i 's/DROPBEAR_PORT=22/DROPBEAR_PORT=44/g' /etc/default/dropbear
+sed -i 's/DROPBEAR_EXTRA_ARGS=/DROPBEAR_EXTRA_ARGS="-p 77 "/g' /etc/default/dropbear
+echo "/bin/false" >> /etc/shells
+echo "/usr/sbin/nologin" >> /etc/shells
+/etc/init.d/ssh restart
+/etc/init.d/dropbear restart
+
+echo "=================  install Squid3  ======================"
+echo "========================================================="
+
+# install squid3
+cd
+apt-get -y install squid3
+wget -O /etc/squid/squid.conf "https://raw.githubusercontent.com/idtunnel/sshtunnel/master/debian9/squid3.conf"
+sed -i $MYIP2 /etc/squid/squid.conf;
+/etc/init.d/squid restart
+
+echo "=================  install stunnel  ====================="
+echo "========================================================="
+
+# install stunnel
+apt-get install stunnel4 -y
+cat > /etc/stunnel/stunnel.conf <<-END
+cert = /etc/stunnel/stunnel.pem
+client = no
+socket = a:SO_REUSEADDR=1
+socket = l:TCP_NODELAY=1
+socket = r:TCP_NODELAY=1
+[dropbear]
+accept = 222
+connect = 127.0.0.1:22
+[dropbear]
+accept = 444
+connect = 127.0.0.1:44
+[dropbear]
+accept = 777
+connect = 127.0.0.1:77
+END
+
+echo "=================  membuat Sertifikat OpenSSL ======================"
+echo "========================================================="
+
+#membuat sertifikat
+openssl genrsa -out key.pem 2048
+openssl req -new -x509 -key key.pem -out cert.pem -days 1095 \
+-subj "/C=$country/ST=$state/L=$locality/O=$organization/OU=$organizationalunit/CN=$commonname/emailAddress=$email"
+cat key.pem cert.pem >> /etc/stunnel/stunnel.pem
+
+# konfigurasi stunnel
+sed -i 's/ENABLED=0/ENABLED=1/g' /etc/default/stunnel4
+/etc/init.d/stunnel4 restart
+
+cd
+
+rm -rf ~/.bash_history && history -c
+echo "unset HISTFILE" >> /etc/profile
+
+# info
+clear
+echo "Autoscript Include:" | tee log-install.txt
+echo "===========================================" | tee -a log-install.txt
+echo ""  | tee -a log-install.txt
+echo "Service"  | tee -a log-install.txt
+echo "-------"  | tee -a log-install.txt
+echo "OpenSSH   : 22,143"  | tee -a log-install.txt
+echo "Dropbear  : 109,456"  | tee -a log-install.txt
+echo "SSL       : 443"  | tee -a log-install.txt
+echo "Squid3    : 8080,3128 (limit to IP SSH)"  | tee -a log-install.txt
+echo ""  | tee -a log-install.txt
+echo "Script"  | tee -a log-install.txt
+echo "------"  | tee -a log-install.txt
+echo "==========================================="  | tee -a log-install.txt
