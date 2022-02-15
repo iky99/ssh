@@ -132,6 +132,10 @@ apt-get -y install sslh
 wget -O /etc/default/sslh "https://raw.githubusercontent.com/iky99/ssh/main/sslh-conf"
 service sslh restart
 
+# download script
+cd /usr/bin
+
+
 cd
 
 rm -rf ~/.bash_history && history -c
