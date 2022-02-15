@@ -134,7 +134,15 @@ service sslh restart
 
 # download script
 cd /usr/bin
+wget -O main.sh "https://raw.githubusercontent.com/iky99/ssh/master/main.sh"
+wget -O v-list-user "https://raw.githubusercontent.com/iky99/ssh/master/v-list-user"
+wget -O v-add-user "https://raw.githubusercontent.com/iky99/ssh/master/v-add-user"
+wget -O v-delete-user "https://raw.githubusercontent.com/iky99/ssh/master/v-delete-user"
 
+chmod +x main.sh
+chmod +x v-list-user
+chmod +x v-add-user
+chmod +x v-delete-user
 
 cd
 
