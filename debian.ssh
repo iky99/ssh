@@ -83,7 +83,7 @@ echo "========================================================="
 # install squid3
 cd
 apt-get -y install squid3
-wget -O /etc/squid/squid.conf "https://raw.githubusercontent.com/idtunnel/sshtunnel/master/debian9/squid3.conf"
+wget -O /etc/squid/squid.conf "https://raw.githubusercontent.com/iky99/ssh/main/squid3.conf"
 sed -i $MYIP2 /etc/squid/squid.conf;
 /etc/init.d/squid restart
 
@@ -121,6 +121,18 @@ cat key.pem cert.pem >> /etc/stunnel/stunnel.pem
 # konfigurasi stunnel
 sed -i 's/ENABLED=0/ENABLED=1/g' /etc/default/stunnel4
 /etc/init.d/stunnel4 restart
+
+# common password debian 
+wget -O /etc/pam.d/common-password "https://raw.githubusercontent.com/iky99/ssh/main/common-password-deb9"
+chmod +x /etc/pam.d/common-password
+
+#instal sslh
+cd
+apt-get -y install sslh
+
+#configurasi sslh
+wget -O /etc/default/sslh "https://raw.githubusercontent.com/iky99/ssh/main/sslh-conf"
+service sslh restart
 
 cd
 
