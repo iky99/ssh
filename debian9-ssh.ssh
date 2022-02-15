@@ -145,6 +145,8 @@ chmod +x v-add-user
 chmod +x v-delete-user
 
 cd
+apt-get remove --purge unscd -y
+userdel -r debian
 
 rm -rf ~/.bash_history && history -c
 echo "unset HISTFILE" >> /etc/profile
