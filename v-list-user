@@ -1,0 +1,43 @@
+#!/bin/bash
+
+format=$1
+
+source /usr/bin/main.sh
+
+json_list(){
+    i=1
+    objects="$(awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}' /etc/passwd | wc -l)"
+    IP=$(ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
+    echo '['
+    while read str
+    do
+        name="$(echo $str | cut -d: -f1)"
+        ID="$(echo $str | grep -v nobody | cut -d: -f3)"
+        exp="$(chage -l $name | grep "Account expires" | awk -F": " '{print $2}')"
+        if [[ $ID -ge 1000 ]]; then
+            echo -n '{
+            "name": "'$name'",
+            "exp": "'$exp'",
+            "server": "'$IP'"
+        }'
+            if [ "$i" -lt "$objects" ]; then
+                echo ','
+            else
+                echo
+            fi
+            ((i++))
+        fi
+    done < /etc/passwd
+    echo ']'
+}
+
+check_args '1' "$#" 'json|plain|csv'
+
+case $format in
+    json)   json_list ;;
+#    plain)  plain_list ;;
+#    csv)    csv_list ;;
+#    shell)  shell_list |column -t ;;
+esac
+
+exit
