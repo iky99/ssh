@@ -10,7 +10,7 @@ MYIP2="s/xxxxxxxxx/$MYIP/g";
 country=ID
 state=Semarang
 locality=JawaTengah
-organization=hidessh
+organization=zessh
 organizationalunit=ZeSSH
 commonname=zessh.com
 email=admin@zessh.com
@@ -61,8 +61,6 @@ systemctl enable rc-local
 systemctl start rc-local.service
 
 apt-get -y update
-
-
 
 echo "================  install Dropbear ======================"
 echo "========================================================="
